@@ -27,7 +27,13 @@ jobs:
       - name: Set up environment
         run: cp .env.dist .env
       - name: Run Docker environment
-        run: docker compose up -d --build --wait
+        run: |
+          docker compose up -d --build
+          echo "Waiting for database to initialize..."
+          sleep 20
+          docker compose ps
+          echo "=== APP CONTAINER LOGS ==="
+          docker compose logs app
         timeout-minutes: 3
       - name: Run code formatting check
         run: docker compose exec app npm run format
