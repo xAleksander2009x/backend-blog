@@ -17,6 +17,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { randomUUID } from 'crypto';
 import { AdminGuard } from 'src/core/http/auth/admin.guard';
 import { GenericBadRequestResponse } from 'src/core/http/response/bad-request.response';
 import { ForbiddenResponse } from 'src/core/http/response/forbidden.response';
@@ -28,7 +29,6 @@ import { DeleteArticleCommand } from '../application/command/delete-article.comm
 import { UpdateArticleCommand } from '../application/command/update-article.command';
 import { GetArticleByIdQuery } from '../application/query/get-article-by-id.query';
 import { GetArticlesQuery } from '../application/query/get-articles.query';
-import { Article } from '../model/article.model';
 import { ArticleResponse } from './dto/article.response';
 import { CreateArticleRequest } from './dto/create-article.request';
 import { UpdateArticleRequest } from './dto/update-article.request';
@@ -44,9 +44,7 @@ export class ArticlesController {
   @ApiOperation({ summary: 'Returns all published articles, newest first' })
   @ApiResponse({ status: HttpStatus.OK, type: [ArticleResponse] })
   async getArticles(): Promise<ArticleResponse[]> {
-    const articles = await this.queryBus.execute<GetArticlesQuery, Article[]>(
-      new GetArticlesQuery(),
-    );
+    const articles = await this.queryBus.execute(new GetArticlesQuery());
     return articles.map(ArticleResponse.fromModel);
   }
 
@@ -60,9 +58,7 @@ export class ArticlesController {
   })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: GenericNotFoundResponse })
   async getArticleById(@UuidParam('id') id: string): Promise<ArticleResponse> {
-    const article = await this.queryBus.execute<GetArticleByIdQuery, Article>(
-      new GetArticleByIdQuery(id),
-    );
+    const article = await this.queryBus.execute(new GetArticleByIdQuery(id));
     return ArticleResponse.fromModel(article);
   }
 
@@ -75,18 +71,16 @@ export class ArticlesController {
     status: HttpStatus.BAD_REQUEST,
     type: GenericBadRequestResponse,
   })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    type: UnauthorizedResponse,
-  })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: UnauthorizedResponse })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, type: ForbiddenResponse })
   async createArticle(
     @Body() body: CreateArticleRequest,
   ): Promise<ArticleResponse> {
-    const article = await this.commandBus.execute<
-      CreateArticleCommand,
-      Article
-    >(new CreateArticleCommand(body.title, body.content));
+    const id = randomUUID();
+    await this.commandBus.execute(
+      new CreateArticleCommand(id, body.title, body.content),
+    );
+    const article = await this.queryBus.execute(new GetArticleByIdQuery(id));
     return ArticleResponse.fromModel(article);
   }
   @Patch(':id')
@@ -99,20 +93,17 @@ export class ArticlesController {
     status: HttpStatus.BAD_REQUEST,
     type: GenericBadRequestResponse,
   })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    type: UnauthorizedResponse,
-  })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: UnauthorizedResponse })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, type: ForbiddenResponse })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: GenericNotFoundResponse })
   async updateArticle(
     @UuidParam('id') id: string,
     @Body() body: UpdateArticleRequest,
   ): Promise<ArticleResponse> {
-    const article = await this.commandBus.execute<
-      UpdateArticleCommand,
-      Article
-    >(new UpdateArticleCommand(id, body.title, body.content));
+    await this.commandBus.execute(
+      new UpdateArticleCommand(id, body.title, body.content),
+    );
+    const article = await this.queryBus.execute(new GetArticleByIdQuery(id));
     return ArticleResponse.fromModel(article);
   }
 
@@ -127,15 +118,10 @@ export class ArticlesController {
     status: HttpStatus.BAD_REQUEST,
     type: GenericBadRequestResponse,
   })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    type: UnauthorizedResponse,
-  })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: UnauthorizedResponse })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, type: ForbiddenResponse })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: GenericNotFoundResponse })
   async deleteArticle(@UuidParam('id') id: string): Promise<void> {
-    await this.commandBus.execute<DeleteArticleCommand, void>(
-      new DeleteArticleCommand(id),
-    );
+    await this.commandBus.execute(new DeleteArticleCommand(id));
   }
 }
