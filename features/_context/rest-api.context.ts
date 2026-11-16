@@ -59,7 +59,7 @@ When(
       method: method,
       url: url,
       validateStatus: () => true,
-      headers: apiToken === '' ? {} : { Authorization: `Bearer ${apiToken}` },
+      headers: !apiToken ? {} : { Authorization: `Bearer ${apiToken}` },
     });
   },
 );
@@ -73,7 +73,7 @@ When(
       url: url,
       data: JSON.parse(body),
       validateStatus: () => true,
-      headers: apiToken === '' ? {} : { Authorization: `Bearer ${apiToken}` },
+      headers: !apiToken ? {} : { Authorization: `Bearer ${apiToken}` },
     });
   },
 );
@@ -112,6 +112,20 @@ Then('I dump response', () => {
   console.log(JSON.stringify(apiResponse.data));
 });
 
+Given('I use no token', () => {
+  apiToken = null;
+});
+
+Given('I use wrong token', () => {
+  apiToken = 'wrong-token';
+});
+
+Then(
+  'the response body should have property {string} equal to {string}',
+  (property: string, value: string) => {
+    expect(apiResponse.data[property]).toBe(value);
+  },
+);
 After(() => {
   apiToken = null;
 });
