@@ -1,8 +1,8 @@
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { IQueryHandler, Query, QueryHandler } from '@nestjs/cqrs';
 import { Article } from '../../model/article.model';
 import { ArticleRepository } from '../../model/article.repository';
 
-export class GetArticlesQuery {}
+export class GetArticlesQuery extends Query<Article[]> {}
 
 @QueryHandler(GetArticlesQuery)
 export class GetArticlesHandler implements IQueryHandler<GetArticlesQuery> {

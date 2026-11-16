@@ -1,10 +1,12 @@
-import { NotFoundException } from '@nestjs/common';
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { IQueryHandler, Query, QueryHandler } from '@nestjs/cqrs';
+import { ArticleNotFoundException } from '../../model/article-not-found.exception';
 import { Article } from '../../model/article.model';
 import { ArticleRepository } from '../../model/article.repository';
 
-export class GetArticleByIdQuery {
-  constructor(public readonly id: string) {}
+export class GetArticleByIdQuery extends Query<Article> {
+  constructor(public readonly id: string) {
+    super();
+  }
 }
 
 @QueryHandler(GetArticleByIdQuery)
@@ -13,11 +15,9 @@ export class GetArticleByIdHandler implements IQueryHandler<GetArticleByIdQuery>
 
   async execute(query: GetArticleByIdQuery): Promise<Article> {
     const article = await this.articleRepository.findById(query.id);
-
     if (!article) {
-      throw new NotFoundException(`Article with id "${query.id}" not found.`);
+      throw new ArticleNotFoundException(query.id);
     }
-
     return article;
   }
 }

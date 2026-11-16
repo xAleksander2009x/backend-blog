@@ -23,8 +23,8 @@ export class PrismaArticleRepository extends ArticleRepository {
     return r ? new Article(r.id, r.title, r.content, r.publishedAt) : null;
   }
 
-  async create(article: Article): Promise<Article> {
-    const r = await this.prisma.article.create({
+  async create(article: Article): Promise<void> {
+    await this.prisma.article.create({
       data: {
         id: article.id,
         title: article.title,
@@ -32,15 +32,13 @@ export class PrismaArticleRepository extends ArticleRepository {
         publishedAt: article.publishedAt,
       },
     });
-    return new Article(r.id, r.title, r.content, r.publishedAt);
   }
 
-  async update(article: Article): Promise<Article> {
-    const r = await this.prisma.article.update({
+  async update(article: Article): Promise<void> {
+    await this.prisma.article.update({
       where: { id: article.id },
       data: { title: article.title, content: article.content },
     });
-    return new Article(r.id, r.title, r.content, r.publishedAt);
   }
 
   async delete(id: string): Promise<void> {
